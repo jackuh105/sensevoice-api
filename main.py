@@ -1,17 +1,17 @@
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Response
 from funasr import AutoModel
 from pydub import AudioSegment
+from fastapi import FastAPI, UploadFile, File, HTTPException, Response
 from starlette.status import HTTP_415_UNSUPPORTED_MEDIA_TYPE, HTTP_422_UNPROCESSABLE_ENTITY, HTTP_204_NO_CONTENT
 
 app = FastAPI()
 
 # 初始化 SenseVoice 模型
 model_name = "iic/SenseVoiceSmall"
-asr_model = AutoModel(model=model_name, disable_update=True, device="mps")
+asr_model = AutoModel(model=model_name, disable_update=True, device="mps") # change to your own device if necessary
 
 @app.post("/transcribe")
-async def transcribe(audio_file: UploadFile = File(...), model_name: str = "iic/SenseVoiceSmall"):
+async def transcribe(audio_file: UploadFile = File(...)):
     # 驗證音頻文件是否存在
     if not audio_file:
         raise HTTPException(status_code=400, detail="No audio file provided")
