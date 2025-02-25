@@ -2,7 +2,7 @@
 
 ## 概述
 
-本項目作為LLM協作開發試用項目，在開發過程中使用LLM生成部分代碼、注釋和說明文件。
+本項目作為LLM協作開發試驗項目，在開發過程中使用LLM生成部分代碼、注釋和說明文件。
 此項目旨在開發一個基於 `FastAPI` 的語音轉文字（STT）API 服務器，使用 `SenseVoice` 作為 STT 提供者，提供 `/transcribe` 和 `/status` 兩個端點。
 
 ## 技術棧
@@ -15,6 +15,21 @@
     - `fastapi[all]`（包含文件上傳支持）
 - 運行環境: macOS，設備設為 mps
 
+## 快速開始
+
+1. 創建一個 Python 虛擬環境，並安裝相應的依賴。
+
+```bash
+python -m venv venv
+```
+
+2. 激活虛擬環境並安裝相應的依賴。
+
+```bash
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
 ## 端點設計
 
 1. /transcribe
@@ -22,7 +37,6 @@
 - 方法: POST
 - 參數:
     - `audio_file`: 音頻文件（必填，文件上傳）
-    - `model_name`: 模型名稱（必填，字符串，例如 "iic/SenseVoiceSmall"）
 - 功能:
     - 驗證:
     - 檢查 `audio_file` 是否存在，若無則返回 400 Bad Request。
@@ -42,6 +56,7 @@
 - 返回: 204 No Content（服務器正常運行）
 
 ## 實現步驟
+
 1. 環境設置:
     - 安裝依賴：更新 `requirements.txt`。
     - 初始化 `FastAPI` 應用。
@@ -60,11 +75,7 @@
 ```
 stt-api/
 ├── main.py           # FastAPI 應用入口
+├── .gitignore        # Git 忽略文件
 ├── requirements.txt  # 依賴文件
-├── example_usage.py  # 參考文件
-└── project-plan.md   # 本計劃文件
+└── README.md   # 說明文件
 ```
-
-## 注意事項
-- 確保音頻處理不會阻塞主線程，可考慮異步處理。
-- 記錄異常日誌以便調試。
