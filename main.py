@@ -1,10 +1,23 @@
-
 from funasr import AutoModel
 from pydub import AudioSegment
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, UploadFile, File, HTTPException, Response
 from starlette.status import HTTP_415_UNSUPPORTED_MEDIA_TYPE, HTTP_422_UNPROCESSABLE_ENTITY, HTTP_204_NO_CONTENT
 
 app = FastAPI()
+
+# CORS Setting
+origins = [
+    "http://localhost:3000"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 初始化 SenseVoice 模型
 model_name = "iic/SenseVoiceSmall"
@@ -18,10 +31,10 @@ async def transcribe(audio_file: UploadFile = File(...)):
 
     # 驗證音頻格式
     file_extension = audio_file.filename.split('.')[-1].lower()
-    if file_extension not in ["wav", "mp3", "opus"]:
+    if file_extension not in ["wav", "mp3", "opus", "webm"]:
         raise HTTPException(
             status_code=HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Unsupported audio format. Only wav, mp3, and opus are allowed."
+            detail="Unsupported audio format. Only wav, mp3, opus, and webm are allowed."
         )
 
     # 讀取音頻並驗證採樣率
