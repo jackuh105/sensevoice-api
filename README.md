@@ -30,6 +30,12 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+3. 啟動伺服器
+
+```bash
+uvicorn main:app --reload
+```
+
 ## 端點設計
 
 1. /transcribe
