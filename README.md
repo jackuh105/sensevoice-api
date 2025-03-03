@@ -1,87 +1,40 @@
-# 語音轉文字（STT）API Server
+# STT/TTS API Server
 
-## 概述
+## Summary
 
-本項目作為LLM協作開發試驗項目，在開發過程中使用LLM生成部分代碼、注釋和說明文件。
-此項目旨在開發一個基於 `FastAPI` 的語音轉文字（STT）API 服務器，使用 `SenseVoice` 作為 STT 提供者，提供 `/transcribe` 和 `/status` 兩個端點。
+STT/ TTS API server using `SenseVoice` for STT, `kokoro` v1.1 for TTS and `FastAPI` for the server.
+Provides 3 API:
+1. `/transcribe`: transcribe the received audio file and return the transcription.
+2. `/text-to-speech`: generate audio file from the received text.
+3. `/status`: health check.
 
-## 技術棧
+## Quick Start
 
-- 框架: FastAPI
-- STT 提供者: SenseVoice
-- 依賴:
-    - `funasr`（用於 SenseVoice）
-    - `pydub`（用於音頻格式驗證與轉換）
-    - `fastapi[all]`（包含文件上傳支持）
-- 運行環境: macOS，設備設為 mps
-
-## 快速開始
-
-1. 創建一個 Python 虛擬環境，並安裝相應的依賴。
+1. Create a virtual environment.
 
 ```bash
 python -m venv venv
 ```
 
-2. 激活虛擬環境並安裝相應的依賴。
+2. Activate the virtual environment and install the dependencies.
 
 ```bash
 source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. 啟動伺服器
+3. Start the server
 
 ```bash
 uvicorn main:app --reload
 ```
 
-## 端點設計
-
-1. /transcribe
-
-- 方法: POST
-- 參數:
-    - `audio_file`: 音頻文件（必填，文件上傳）
-- 功能:
-    - 驗證:
-    - 檢查 `audio_file` 是否存在，若無則返回 400 Bad Request。
-    - 驗證音頻格式，僅接受 `wav`、`mp3`、`opus`，否則返回 415 Unsupported Media Type。
-    - 檢查採樣率，若高於 16000 Hz 則轉換為 16000 Hz，若低於則返回 422 Unprocessable Entity。
-- 處理:
-    - 使用 `SenseVoice` 的 `AutoModel.generate` 轉錄音頻，設置 `language='auto'` 和 `use_itn=True`。
-- 返回:
-    - 成功：200 OK，JSON 格式 `{ "status": "success", "transcription": "轉錄文本" }`
-    - 無語音檢測到：200 OK，`{ "status": "success", "transcription": "No speech detected" }`
-    - 異常：500 Internal Server Error，`{ "status": "error", "message": "錯誤訊息" }`
-
-2. /status
-
-- 方法: GET
-- 功能: 健康檢查，返回服務器狀態。
-- 返回: 204 No Content（服務器正常運行）
-
-## 實現步驟
-
-1. 環境設置:
-    - 安裝依賴：更新 `requirements.txt`。
-    - 初始化 `FastAPI` 應用。
-2. 服務器實現:
-    - 加載 `SenseVoice` 模型作為全局變量。
-    - 實現 `/transcribe` 端點，包括驗證和轉錄邏輯。
-    - 實現 `/status` 端點。
-3. 測試:
-    - 使用樣本音頻文件測試 `/transcribe`，包括有效和無效輸入。
-    - 驗證 `/status` 返回正確狀態碼。
-4. 部署:
-    - 使用 `uvicorn` 運行服務器。
-
-## 文件結構
+## File structure
 
 ```
 stt-api/
-├── main.py           # FastAPI 應用入口
-├── .gitignore        # Git 忽略文件
-├── requirements.txt  # 依賴文件
-└── README.md   # 說明文件
+├── main.py         
+├── .gitignore      
+├── requirements.txt
+└── README.md   
 ```
