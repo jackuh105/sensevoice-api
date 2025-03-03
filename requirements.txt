@@ -8,3 +8,6 @@ numpy<=1.26.4
 gradio
 fastapi[all]
 pydub
+kokoro>=0.8.2
+misaki[zh]>=0.8.2
+soundfile
