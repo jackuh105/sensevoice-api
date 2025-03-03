@@ -25,6 +25,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 初始化 SenseVoice 模型
+model_name = "iic/SenseVoiceSmall"
+asr_model = AutoModel(model=model_name, disable_update=True, device="mps") # change to your own device if necessary
+# 初始化 Kokoro TTS 模型
 def en_callable(text):
     if text == 'Kokoro':
         return 'kˈOkəɹO'
@@ -32,23 +36,24 @@ def en_callable(text):
         return 'sˈOl'
     return next(en_pipeline(text)).phonemes
 
-# 初始化 SenseVoice 模型
-model_name = "iic/SenseVoiceSmall"
-asr_model = AutoModel(model=model_name, disable_update=True, device="mps") # change to your own device if necessary
-# 初始化 Kokoro TTS 模型
-tts_repo_id = "hexgrad/Kokoro-82M-v1.1-zh"
+def speed_callable(len_ps):
+    speed = 0.8
+    if len_ps <= 83:
+        speed = 1
+    elif len_ps < 183:
+        speed = 1 - (len_ps - 83) / 500
+    return speed * 1.1
+
+TTS_VOICE = 'zf_001' if True else 'zm_010'
+TTS_REPO_ID = 'hexgrad/Kokoro-82M-v1.1-zh'
 tts_device = "cuda" if torch.cuda.is_available() else "cpu"
-tts_model = KModel(repo_id=tts_repo_id).to(tts_device).eval()
-tts_pipelines = {
-    "en": KPipeline(lang_code="a", repo_id=tts_repo_id, model=tts_model),
-    "zh": KPipeline(lang_code="z", repo_id=tts_repo_id, model=tts_model, en_callable=en_callable)
-}
+tts_model = KModel(repo_id=TTS_REPO_ID).to(tts_device).eval()
+en_pipeline = KPipeline(lang_code="a", repo_id=TTS_REPO_ID, model=False)
+zh_pipeline =  KPipeline(lang_code="z", repo_id=TTS_REPO_ID, model=tts_model, en_callable=en_callable)
 
 # Pydantic 模型定義輸入結構
 class TTSRequest(BaseModel):
     text: str
-    language_code: str = "zh"
-    voice_settings: str = "zf_001"
 
 @app.post("/transcribe")
 async def transcribe(audio_file: UploadFile = File(...)):
@@ -88,18 +93,10 @@ async def text_to_speech(request: TTSRequest = Body(...)):
     if not request.text:
         raise HTTPException(status_code=400, detail="No text provided")
 
-    # 驗證 language_code
-    if request.language_code not in ["en", "zh"]:
-        raise HTTPException(
-            status_code=HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Unsupported language code. Only 'en' and 'zh' are allowed."
-        )
-
     try:
         # 根據語言選擇對應的 pipeline
-        pipeline = tts_pipelines[request.language_code]
         # 生成音頻
-        generator = pipeline(request.text, voice=request.voice_settings)
+        generator = zh_pipeline(request.text, voice=TTS_VOICE, speed=speed_callable)
         result = next(generator)
         audio_data = result.audio
 
