@@ -1,5 +1,5 @@
-import io
 import re
+import io
 import torch
 import base64
 import soundfile as sf
@@ -98,8 +98,15 @@ async def text_to_speech(request: TTSRequest = Body(...)):
     try:
         # 根據 split_sentence 分割或處理完整文本
         if request.split_sentence:
-            sentences = re.split('[。\.\n]', request.text)
-            sentences = [s.strip() for s in sentences if s.strip()]
+            sentences = []
+            last_pos = 0
+            for match in re.finditer('[。！？\.\n]', request.text):
+                pos = match.end()
+                sentences.append(request.text[last_pos:pos].strip())
+                last_pos = pos
+            if last_pos < len(request.text):
+                sentences.append(request.text[last_pos:].strip())
+            sentences = [s for s in sentences if s]
         else:
             sentences = [request.text.strip()]
 
