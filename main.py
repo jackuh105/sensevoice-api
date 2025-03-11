@@ -1,4 +1,5 @@
 import io
+import re
 import torch
 import base64
 import soundfile as sf
@@ -49,11 +50,12 @@ TTS_REPO_ID = 'hexgrad/Kokoro-82M-v1.1-zh'
 tts_device = "cuda" if torch.cuda.is_available() else "cpu"
 tts_model = KModel(repo_id=TTS_REPO_ID).to(tts_device).eval()
 en_pipeline = KPipeline(lang_code="a", repo_id=TTS_REPO_ID, model=False)
-zh_pipeline =  KPipeline(lang_code="z", repo_id=TTS_REPO_ID, model=tts_model, en_callable=en_callable)
+zh_pipeline = KPipeline(lang_code="z", repo_id=TTS_REPO_ID, model=tts_model, en_callable=en_callable)
 
 # Pydantic 模型定義輸入結構
 class TTSRequest(BaseModel):
     text: str
+    split_sentence: bool = False
 
 @app.post("/transcribe")
 async def transcribe(audio_file: UploadFile = File(...)):
@@ -94,22 +96,28 @@ async def text_to_speech(request: TTSRequest = Body(...)):
         raise HTTPException(status_code=400, detail="No text provided")
 
     try:
-        # 根據語言選擇對應的 pipeline
-        # 生成音頻
-        generator = zh_pipeline(request.text, voice=TTS_VOICE, speed=speed_callable)
-        result = next(generator)
-        audio_data = result.audio
+        # 根據 split_sentence 分割或處理完整文本
+        if request.split_sentence:
+            sentences = re.split('[。\.\n]', request.text)
+            sentences = [s.strip() for s in sentences if s.strip()]
+        else:
+            sentences = [request.text.strip()]
 
-        # 將音頻數據轉為字節流
-        buffer = io.BytesIO()
-        sf.write(buffer, audio_data, samplerate=24000, format="WAV")
-        buffer.seek(0)
-        audio_bytes = buffer.getvalue()
+        audio_results = []
+        for sentence in sentences:
+            generator = zh_pipeline(sentence, voice=TTS_VOICE, speed=speed_callable)
+            result = next(generator)
+            audio_data = result.audio
 
-        # 將字節數據編碼為 Base64 字符串
-        audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
+            buffer = io.BytesIO()
+            sf.write(buffer, audio_data, samplerate=24000, format="WAV")
+            buffer.seek(0)
+            audio_bytes = buffer.getvalue()
+            audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
 
-        return {"status": "success", "audio_data": audio_base64}
+            audio_results.append({"sentence": sentence, "data": audio_base64})
+
+        return {"status": "success", "audio_data": audio_results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"TTS failed: {str(e)}")
 
